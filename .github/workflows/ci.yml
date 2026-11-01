@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Tests, lint and types (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy
+      - run: uv run pytest --cov=bookinventory --cov-report=term-missing
+
+  ios:
+    name: Build and test on the iOS Simulator
+    runs-on: macos-15
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: sudo xcode-select -s /Applications/Xcode_16.2.app
+      - run: uv sync --frozen
+      # Builds the app (catches missing __main__, unsupported widgets, bad
+      # requirements) and runs the test-suite inside the Simulator, including
+      # tests/test_on_device.py which checks the Objective-C bridges.
+      - run: uv run briefcase create iOS --no-input
+      - run: uv run briefcase build iOS --no-input
+      # -r installs test_requires (pytest) into the bundle; an existing build
+      # otherwise only gets its code updated.
+      - run: uv run briefcase run iOS --test -r --no-input -u auto

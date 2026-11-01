@@ -1,0 +1,113 @@
+[project]
+name = "bookinventory"
+version = "0.1.0"
+description = "Photograph a bookshelf and build an inventory of the books on it"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Your Name", email = "you@example.com" }]
+# What the code itself imports. Briefcase adds these to each app's `requires`,
+# and the platform backends (toga-iOS, ...) are listed per platform below.
+dependencies = [
+    "toga-core>=0.5.0",
+]
+
+[project.urls]
+Homepage = "https://example.com/bookinventory"
+
+[project.optional-dependencies]
+# Merged by Briefcase into `test_requires`; used for `briefcase run --test`.
+test = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+]
+
+# Development environment, managed by uv:
+#   uv sync            create .venv with the app deps, test extras and dev tools
+#   uv run pytest      run the test-suite
+#   uv run briefcase … package the app
+[dependency-groups]
+dev = [
+    "bookinventory[test]",
+    "briefcase>=0.4.6",
+    "mypy>=1.10",
+    "pytest-cov>=6.0",
+    "ruff>=0.12",
+    "toga-dummy>=0.5.0",
+    "toga-ios>=0.5.0",
+]
+
+[tool.uv]
+# This is a Briefcase app, not a distributable Python package: uv installs the
+# dependencies into .venv but does not try to build/install the app itself.
+package = false
+
+[build-system]
+requires = ["briefcase"]
+
+[tool.briefcase]
+# Project metadata (name, version, author, license, ...) comes from [project].
+bundle = "com.example"
+
+[tool.briefcase.app.bookinventory]
+formal_name = "Book Inventory"
+sources = ["src/bookinventory"]
+test_sources = ["tests"]
+# Briefcase builds the app's isolated environment with uv too (uv venv /
+# uv pip install) instead of venv + pip.
+env_manager = "uv"
+
+# Camera permission text shown by iOS the first time the camera is used.
+permission.camera = "Book Inventory uses the camera to photograph your bookshelves."
+
+[tool.briefcase.app.bookinventory.iOS]
+requires = [
+    "toga-iOS>=0.5.0",
+    "std-nslog>=1.0.3",
+]
+# Make the app's Documents folder (where exports are written) visible in the
+# Files app and via Finder/iTunes file sharing.
+info.UIFileSharingEnabled = true
+info.LSSupportsOpeningDocumentsInPlace = true
+
+# Desktop targets are handy for working on the UI with `briefcase dev`; OCR is
+# iOS-only and the app reports "no text found" elsewhere.
+[tool.briefcase.app.bookinventory.macOS]
+requires = [
+    "toga-cocoa>=0.5.0",
+]
+
+[tool.briefcase.app.bookinventory.linux]
+requires = [
+    "toga-gtk>=0.5.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "."]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = ["error::DeprecationWarning:bookinventory"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/test_core.py" = ["E501"]  # pre-existing test file, left as-is
+
+[tool.ruff.format]
+exclude = ["tests/test_core.py"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src/bookinventory"]
+strict_optional = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+check_untyped_defs = true
+ignore_missing_imports = true  # rubicon/toga backends have no stubs
